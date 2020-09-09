@@ -18,7 +18,7 @@ So I decided to do something simple in Go, Putio-Go
 
 Just build the image with the given Dockerfile:
 
-    docker build --no-cache -t putio-go .
+    docker build --no-cache -t krantor .
 
 ## Configuration
 
@@ -37,15 +37,13 @@ In the URL, you should see something like: `https://app.put.io/files/your_folder
 
 ```
 docker create \
-  --name=putio \
-  -e PUID=1000 \
-  -e PGID=1000 \
+  --name=krantor \
   -e PUTIO_TOKEN=xxx \
   -e PUTIO_WATCH_FOLDER=/torrents \
   -e PUTIO_DOWNLOAD_FOLDER_ID=0 \
   -v /path/to/torrent:/torrents \
   --restart unless-stopped \
-  putio-go
+  krantor
 ```
 
 ### Docker-compose
@@ -55,11 +53,9 @@ docker create \
 version: "3.7"
 services:
   putio:
-    image: putio-go
-    container_name: putio
+    image: krantor
+    container_name: krantor
     environment:
-      - PUID=1000
-      - PGID=1000
       - PUTIO_TOKEN=xxx
       - PUTIO_WATCH_FOLDER=/torrents
       - PUTIO_DOWNLOAD_FOLDER_ID=0
@@ -69,4 +65,4 @@ services:
 ```
 
 ### Example
-![alt text](https://i.imgur.com/xzM3Srr.png "Example of logs given by PutioUploadr")
+![alt text](https://i.imgur.com/1jUU1xn.png "Example of logs given by Krantor")

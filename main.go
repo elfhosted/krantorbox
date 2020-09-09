@@ -251,7 +251,7 @@ func checkEnvVariables() error {
 }
 
 func main() {
-	log.Println("putioUploadr Started")
+	log.Println("Krantor Started")
 
 	client, err := connectToPutio()
 	if err != nil {
