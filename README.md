@@ -3,7 +3,7 @@
 After searching for something that could help facilitate transfering files from local/apps/services to Putio, nothing corresponded to what I was looking for.
 Almost all projects were at least 2years old.
 
-So I decided to do something simple in Go, Putio-Go
+So I decided to do something simple in Go, Krantor
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@ So I decided to do something simple in Go, Putio-Go
 * [Advanced Usage](#advanced-usage)
   * [Docker](#docker)
   * [Docker-compose](#docker-compose)
-* [How to use with Sonarr/Radarr](#How-to-use-with-Sonarr/Radarr)
+* [How to use with Sonarr/Radarr](#how-to-use-with-sonarr/radarr)
 * [Example](#example)
 
 ## Installation
