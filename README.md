@@ -12,6 +12,7 @@ So I decided to do something simple in Go, Putio-Go
 * [Advanced Usage](#advanced-usage)
   * [Docker](#docker)
   * [Docker-compose](#docker-compose)
+* [How to use with Sonarr/Radarr](#How-to-use-with-Sonarr/Radarr)
 * [Example](#example)
 
 ## Installation
@@ -63,6 +64,17 @@ services:
       - /path/to/torrent:/torrents
     restart: unless-stopped
 ```
+
+### How to use with Sonarr/Radarr
+What you have to do is:
+ * Go to your Radarr/Sonarr configuration
+ * `Download Client` tab
+ * Add a new `torrent blackhole` client
+ * Chose a name
+ * In torrent & watch folder, put the same folder you set as `PUTIO_WATCH_FOLDER`
+   * If for `PUTIO_WATCH_FOLDER` you set `/torrent`, you should put the same in torrent & watch folder
+ * Save magnet file !!
+ * Done !
 
 ### Example
 ![alt text](https://i.imgur.com/1jUU1xn.png "Example of logs given by Krantor")
