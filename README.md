@@ -1,4 +1,4 @@
-# Putio-go
+# Krantor
 
 After searching for something that could help facilitate transfering files from local/apps/services to Putio, nothing corresponded to what I was looking for.
 Almost all projects were at least 2years old.
