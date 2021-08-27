@@ -136,7 +136,7 @@ func runScript() ([]byte, error) {
 }
 
 func cleaningFilename(event watcher.Event) string {
-	// Retrieve the events and convert it into string to eb able to work with it
+	// Retrieve the events and convert it into string to be able to work with it
 	wordsWithSpace := fmt.Sprintf("%v", event)
 
 	// Convert the string by replacing the space by dot
@@ -156,7 +156,7 @@ func prepareFile(event watcher.Event, client *putio.Client) {
 	var err error
 	var fileType string
 
-	// We run the script to **rename the file** by repalcing space by dot
+	// We run the script to **rename the file** by replacing space by dot
 	_, err = runScript()
 	if err != nil {
 		fmt.Println("Couldn't run the script: ", err)
