@@ -124,7 +124,7 @@ func checkFileType(filename string) (string, error) {
 func runScript() ([]byte, error) {
 	// Running the bash script that will rename files by replacing space by dot
 	// Argument is where to rename file, here is the watch folder where files will be DL
-	cmd := exec.Command("/bin/sh", "/app/chFileName.sh", folderPath)
+	cmd := exec.Command("/bin/sh", "chFileName.sh", folderPath)
 	// cmd.Env = []string{"A=B"}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
