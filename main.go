@@ -34,7 +34,7 @@ func connectToPutio() (*putio.Client, error) {
 	return client, nil
 }
 
-func folderIDConvert(fodlerID string) (int64, error) {
+func folderIDConvert() (int64, error) {
 	folderID, err := strconv.ParseInt(downloadFolderID, 10, 32)
 	if err != nil {
 		str := fmt.Sprintf("strconv err: %v", err)
@@ -49,7 +49,7 @@ func uploadToPutio(filename string, filepath string, client *putio.Client) error
 	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
-	folderID, err := folderIDConvert(downloadFolderID)
+	folderID, err := folderIDConvert()
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func transferToPutio(filename string, filepath string, client *putio.Client) err
 	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
-	folderID, err := folderIDConvert(downloadFolderID)
+	folderID, err := folderIDConvert()
 	if err != nil {
 		return err
 	}
