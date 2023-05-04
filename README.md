@@ -78,3 +78,9 @@ What you have to do is:
 
 ### Example
 ![alt text](https://i.imgur.com/1jUU1xn.png "Example of logs given by Krantor")
+
+
+## TODO
+
+* make dev mention of `go get -d ./...` and `go build` and the syn bash script
+* setup instructions a la https://www.reddit.com/r/putdotio/comments/136u8r2/comment/jisszuf/?utm_source=reddit&utm_medium=web2x&context=3
