@@ -44,7 +44,7 @@ func folderIDConvert() (int64, error) {
 	return folderID, nil
 }
 
-func uploadToPutio(filename string, filepath string, client *putio.Client) error {
+func uploadTorrentToPutio(filename string, filepath string, client *putio.Client) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
 	defer cancel()
 
@@ -70,12 +70,11 @@ func uploadToPutio(filename string, filepath string, client *putio.Client) error
 		return err
 	}
 
-	// fmt.Println("-------------------")
-	fmt.Printf("File: %v has been transfered to Putio at %v\n-------------------\n", filename, result.Transfer.CreatedAt)
+	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.Transfer.CreatedAt)
 	return nil
 }
 
-func transferToPutio(filename string, filepath string, client *putio.Client) error {
+func transferMagnetToPutio(filename string, filepath string, client *putio.Client) error {
 	// Creating a context with 5 second timout in case Transfer is too long
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
 	defer cancel()
@@ -102,8 +101,7 @@ func transferToPutio(filename string, filepath string, client *putio.Client) err
 		return err
 	}
 
-	// fmt.Println("-------------------")
-	fmt.Printf("File: %v has been transfered to Putio at %v\n-------------------\n", filename, result.CreatedAt)
+	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.CreatedAt)
 	return nil
 }
 
@@ -117,7 +115,7 @@ func checkFileType(filename string) (string, error) {
 	} else if isTorrent {
 		return "torrent", nil
 	} else {
-		str := fmt.Sprintf("File: %v doesn't seems to be either a torrent or a magnet file", filename)
+		str := fmt.Sprintf("File isn't a torrent or magnet file: %v", filename)
 		err := errors.New(str)
 		return "", err
 	}
@@ -174,14 +172,14 @@ func prepareFile(event watcher.Event, client *putio.Client) {
 		fileType = torrentOrMagnet
 	}
 
-	fmt.Printf("File: %v has been added to the folder\n\n", cleanFilename)
+	fmt.Printf("Detected new file in watch folder: %v\n", cleanFilename)
 	if fileType == "torrent" {
-		err = uploadToPutio(cleanFilename, filepath, client)
+		err = uploadTorrentToPutio(cleanFilename, filepath, client)
 		if err != nil {
 			log.Println("err: ", err)
 		}
 	} else if fileType == "magnet" {
-		err = transferToPutio(cleanFilename, filepath, client)
+		err = transferMagnetToPutio(cleanFilename, filepath, client)
 		if err != nil {
 			log.Println("err: ", err)
 		}
