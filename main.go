@@ -191,12 +191,6 @@ func prepareFile(event watcher.Event, client *putio.Client) {
 func watchFolder(client *putio.Client) {
 	w := watcher.New()
 
-	// SetMaxEvents to 1 to allow at most 1 event's to be received
-	// on the Event channel per watching cycle.
-	//
-	// If SetMaxEvents is not set, the default is to send all events.
-	w.SetMaxEvents(1)
-
 	// Only notify rename and move events.
 	w.FilterOps(watcher.Move, watcher.Create)
 
@@ -209,7 +203,8 @@ func watchFolder(client *putio.Client) {
 		for {
 			select {
 			case event := <-w.Event:
-				prepareFile(event, client) // Print the event's info.
+				// fmt.Println(event) // Print the event's info.
+				prepareFile(event, client)
 			case err := <-w.Error:
 				log.Fatalln(err)
 			case <-w.Closed:
