@@ -7,8 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
-	"regexp"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +22,7 @@ var (
 	folderPath       string = os.Getenv("PUTIO_WATCH_FOLDER")
 	putioToken       string = os.Getenv("PUTIO_TOKEN")
 	downloadFolderID string = os.Getenv("PUTIO_DOWNLOAD_FOLDER_ID")
+	exPath           string
 )
 
 func connectToPutio() (*putio.Client, error) {
@@ -121,48 +121,19 @@ func checkFileType(filename string) (string, error) {
 	}
 }
 
-func runScript() ([]byte, error) {
-	// Running the bash script that will rename files by replacing space by dot
-	// Argument is where to rename file, here is the watch folder where files will be DL
-	cmd := exec.Command("/bin/sh", "chFileName.sh", folderPath)
-	// cmd.Env = []string{"A=B"}
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-	return output, nil
-}
-
-func cleaningFilename(event watcher.Event) string {
-	// Retrieve the events and convert it into string to be able to work with it
-	wordsWithSpace := fmt.Sprintf("%v", event)
-
-	// Convert the string by replacing the space by dot
-	wordsWithSpace = strings.Replace(wordsWithSpace, " ", ".", -1)
-	// Regex to only take what's inside the double quote
-	re2 := regexp.MustCompile(`"(.*?)"`)
-	cleanFileNameRegex := re2.FindStringSubmatch(wordsWithSpace)
-	// We only take the second result as it's the good one
-	// fmt.Println("Not totally finish filename: ", cleanFileNameRegex)
-	cleanFileName := cleanFileNameRegex[1]
-
-	return cleanFileName
-}
-
 func prepareFile(event watcher.Event, client *putio.Client) {
 	var filepath string
 	var err error
 	var fileType string
 
-	// We run the script to **rename the file** by replacing space by dot
-	_, err = runScript()
-	if err != nil {
-		fmt.Println("Couldn't run the script: ", err)
+	origFilename := event.Path
+	// Convert the string by replacing the space by dot
+	cleanFilename := strings.Replace(origFilename, " ", ".", -1)
+	e := os.Rename(origFilename, cleanFilename)
+	if e != nil {
+		log.Println("Error renaming file")
+		log.Fatal(e)
 	}
-
-	// From events with lots of informations
-	// To a clean filename ready to be used
-	cleanFilename := cleaningFilename(event)
 
 	// Checking if the file is a torrent of a magnet file
 	torrentOrMagnet, err := checkFileType(cleanFilename)
@@ -187,21 +158,17 @@ func prepareFile(event watcher.Event, client *putio.Client) {
 }
 
 func watchFolder(client *putio.Client) {
+	// https://github.com/radovskyb/watcher
 	w := watcher.New()
 
 	// Only notify rename and move events.
 	w.FilterOps(watcher.Move, watcher.Create)
 
-	// Only files that match the regular expression during file listings
-	// will be watched.
-	// r := regexp.MustCompile("^abc$")
-	// w.AddFilterHook(watcher.RegexFilterHook(r, false))
-
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
-				// fmt.Println(event) // Print the event's info.
+				fmt.Println(event) // Print the event's info.
 				prepareFile(event, client)
 			case err := <-w.Error:
 				log.Fatalln(err)
@@ -219,7 +186,7 @@ func watchFolder(client *putio.Client) {
 	fmt.Println()
 
 	// Start the watching process - it'll check for changes every 100ms.
-	if err := w.Start(time.Millisecond * 100); err != nil {
+	if err := w.Start(time.Millisecond * 1000); err != nil {
 		log.Fatalln(err)
 		fmt.Println()
 	}
@@ -245,6 +212,13 @@ func checkEnvVariables() error {
 
 func main() {
 	log.Println("Krantor Started")
+
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath = filepath.Dir(ex)
+	fmt.Println(exPath)
 
 	client, err := connectToPutio()
 	if err != nil {
