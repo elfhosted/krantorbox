@@ -119,35 +119,28 @@ func checkFileType(filename string) (string, error) {
 }
 
 func prepareFile(event fsnotify.Event, client *putio.Client) {
-	var filepath string
+	var filepath string // todo, maybe remove?
 	var err error
 	var fileType string
 
-	origFilename := event.Name
-	// Convert the string by replacing the space by dot
-	cleanFilename := strings.Replace(origFilename, " ", ".", -1)
-	e := os.Rename(origFilename, cleanFilename)
-	if e != nil {
-		log.Println("Error renaming file")
-		log.Fatal(e)
-	}
+	filename := event.Name
 
 	// Checking if the file is a torrent of a magnet file
-	torrentOrMagnet, err := checkFileType(cleanFilename)
+	torrentOrMagnet, err := checkFileType(filename)
 	if err != nil {
 		log.Println(err)
 	} else {
 		fileType = torrentOrMagnet
 	}
 
-	fmt.Printf("Detected new file in watch folder: %v\n", cleanFilename)
+	fmt.Printf("Detected new file in watch folder: %v\n", filename)
 	if fileType == "torrent" {
-		err = uploadTorrentToPutio(cleanFilename, filepath, client)
+		err = uploadTorrentToPutio(filename, filepath, client)
 		if err != nil {
 			log.Println("err: ", err)
 		}
 	} else if fileType == "magnet" {
-		err = transferMagnetToPutio(cleanFilename, filepath, client)
+		err = transferMagnetToPutio(filename, filepath, client)
 		if err != nil {
 			log.Println("err: ", err)
 		}
@@ -168,7 +161,7 @@ func watchFolder(client *putio.Client) {
 				if !ok {
 					return
 				}
-				log.Println("event:", event)
+				// log.Println("event:", event) // Flip on for verbose logging
 				if event.Has(fsnotify.Create) { // AFAICT, I don't need to watch for move.
 					prepareFile(event, client)
 				}

@@ -82,5 +82,7 @@ What you have to do is:
 
 ## TODO
 
-* make dev mention of `go get -d ./...` and `go build` and the syn bash script
+* dev stuff for initial setup
+   * `go mod init gitlab.com/paulirish/krantor` and `go mod tidy`.. then `ENVS=THINGS go run main.go`
+* the syn bash script
 * setup instructions a la https://www.reddit.com/r/putdotio/comments/136u8r2/comment/jisszuf/?utm_source=reddit&utm_medium=web2x&context=3
