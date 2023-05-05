@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +20,6 @@ var (
 	folderPath       string = os.Getenv("PUTIO_WATCH_FOLDER")
 	putioToken       string = os.Getenv("PUTIO_TOKEN")
 	downloadFolderID string = os.Getenv("PUTIO_DOWNLOAD_FOLDER_ID")
-	exPath           string
 )
 
 func connectToPutio() (*putio.Client, error) {
@@ -54,7 +52,7 @@ func uploadTorrentToPutio(filename string, filepath string, client *putio.Client
 	}
 
 	// Using open since Upload need an *os.File variable
-	file, err := os.Open(folderPath + "/" + filename)
+	file, err := os.Open(filename)
 	if err != nil {
 		str := fmt.Sprintf("Openfile err: %v", err)
 		err := errors.New(str)
@@ -85,7 +83,7 @@ func transferMagnetToPutio(filename string, filepath string, client *putio.Clien
 	}
 
 	// Reading the link inside the magnet file to give to Putio
-	magnetData, err := ioutil.ReadFile(folderPath + "/" + filename)
+	magnetData, err := ioutil.ReadFile(filename)
 	if err != nil {
 		str := fmt.Sprintf("Couldn't read file %v: %v", filename, err)
 		err := errors.New(str)
@@ -212,13 +210,6 @@ func checkEnvVariables() error {
 
 func main() {
 	log.Println("Krantor Started")
-
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath = filepath.Dir(ex)
-	fmt.Println(exPath)
 
 	client, err := connectToPutio()
 	if err != nil {
