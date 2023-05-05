@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/igungor/go-putio/putio"
-	"golang.org/x/oauth2"
 
-	"github.com/radovskyb/watcher"
+    "github.com/fsnotify/fsnotify"
+
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -121,12 +122,12 @@ func checkFileType(filename string) (string, error) {
 	}
 }
 
-func prepareFile(event watcher.Event, client *putio.Client) {
+func prepareFile(event fsnotify.Event, client *putio.Client) {
 	var filepath string
 	var err error
 	var fileType string
 
-	origFilename := event.Path
+	origFilename := event.Name
 	// Convert the string by replacing the space by dot
 	cleanFilename := strings.Replace(origFilename, " ", ".", -1)
 	e := os.Rename(origFilename, cleanFilename)
@@ -158,22 +159,31 @@ func prepareFile(event watcher.Event, client *putio.Client) {
 }
 
 func watchFolder(client *putio.Client) {
-	// https://github.com/radovskyb/watcher
-	w := watcher.New()
-
-	// Only notify rename and move events.
-	w.FilterOps(watcher.Move, watcher.Create)
+	// https://pkg.go.dev/github.com/fsnotify/fsnotify
+	w, err := fsnotify.NewWatcher()
+    if err != nil {
+        log.Fatal(err)
+    }
 
 	go func() {
 		for {
 			select {
-			case event := <-w.Event:
-				fmt.Println(event) // Print the event's info.
-				prepareFile(event, client)
-			case err := <-w.Error:
+			case event, ok := <-w.Events:
+                if !ok {
+                    return
+                }
+				log.Println("event:", event) 
+				// Only notify rename and move events.
+
+				if event.Has(fsnotify.Create) || event.Has(fsnotify.Move) {
+					log.Println("create or move") 
+					prepareFile(event, client)
+				}
+			case err, ok := <-w.Errors:
+                if !ok {
+                    return
+                }
 				log.Fatalln(err)
-			case <-w.Closed:
-				return
 			}
 		}
 	}()
@@ -183,13 +193,9 @@ func watchFolder(client *putio.Client) {
 		log.Fatalln(err)
 	}
 
-	fmt.Println()
+	<-make(chan struct{})
 
-	// Start the watching process - it'll check for changes every 100ms.
-	if err := w.Start(time.Millisecond * 1000); err != nil {
-		log.Fatalln(err)
-		fmt.Println()
-	}
+	fmt.Println("Watching", folderPath)
 }
 
 func checkEnvVariables() error {
