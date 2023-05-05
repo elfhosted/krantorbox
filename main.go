@@ -12,10 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/igungor/go-putio/putio"
-
-    "github.com/fsnotify/fsnotify"
-
 	"golang.org/x/oauth2"
 )
 
@@ -161,28 +159,25 @@ func prepareFile(event fsnotify.Event, client *putio.Client) {
 func watchFolder(client *putio.Client) {
 	// https://pkg.go.dev/github.com/fsnotify/fsnotify
 	w, err := fsnotify.NewWatcher()
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	go func() {
 		for {
 			select {
 			case event, ok := <-w.Events:
-                if !ok {
-                    return
-                }
-				log.Println("event:", event) 
-				// Only notify rename and move events.
-
-				if event.Has(fsnotify.Create) || event.Has(fsnotify.Move) {
-					log.Println("create or move") 
+				if !ok {
+					return
+				}
+				log.Println("event:", event)
+				if event.Has(fsnotify.Create) { // AFAICT, I don't need to watch for move.
 					prepareFile(event, client)
 				}
 			case err, ok := <-w.Errors:
-                if !ok {
-                    return
-                }
+				if !ok {
+					return
+				}
 				log.Fatalln(err)
 			}
 		}
@@ -192,10 +187,9 @@ func watchFolder(client *putio.Client) {
 	if err := w.Add(folderPath); err != nil {
 		log.Fatalln(err)
 	}
+	log.Println("Watching", folderPath)
 
 	<-make(chan struct{})
-
-	fmt.Println("Watching", folderPath)
 }
 
 func checkEnvVariables() error {
