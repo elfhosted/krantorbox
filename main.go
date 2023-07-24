@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/igungor/go-putio/putio"
+	"github.com/putdotio/go-putio"
 	"golang.org/x/oauth2"
 )
 
