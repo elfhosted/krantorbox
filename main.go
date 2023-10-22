@@ -42,8 +42,6 @@ func folderIDConvert() (int64, error) {
 }
 
 func uploadTorrentToPutio(filename string, client *putio.Client) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*80))
-	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
 	folderID, err := folderIDConvert()
@@ -59,23 +57,32 @@ func uploadTorrentToPutio(filename string, client *putio.Client) error {
 		return err
 	}
 
-	// Uploading file to Putio
-	log.Println("Read torrent file. Uploading...")
-	result, err := client.Files.Upload(ctx, file, filename, folderID)
+	// Retry the upload up to 3 times, in case of "context deadline exceeded" aka Timeout on the http POST
+	sleepBetweenRetry := time.Duration(10) * time.Second
+	err = retry(3, sleepBetweenRetry, func() (err error) {
+		// putio client's default timeout is 30sec. We'll allow a tad more.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*32))
+		defer cancel()
+		// Uploading file to Putio
+		log.Println("Read torrent file. Uploading...")
+		result, err := client.Files.Upload(ctx, file, filename, folderID)
+		if err != nil {
+			str := fmt.Sprintf("Upload to Putio err: %v", err)
+			err := errors.New(str)
+			return err
+		}
+
+		fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.Transfer.CreatedAt)
+		return nil
+	})
+
 	if err != nil {
-		str := fmt.Sprintf("Upload to Putio err: %v", err)
-		err := errors.New(str)
 		return err
 	}
-
-	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.Transfer.CreatedAt)
 	return nil
 }
 
 func transferMagnetToPutio(filename string, client *putio.Client) error {
-	// Creating a context with 5 second timout in case Transfer is too long
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*80))
-	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
 	folderID, err := folderIDConvert()
@@ -93,17 +100,45 @@ func transferMagnetToPutio(filename string, client *putio.Client) error {
 	}
 	log.Println("magnetData: ", string(magnetData))
 
-	// Using Transfer to DL file via magnet file
-	result, err := client.Transfers.Add(ctx, string(magnetData), folderID, "")
+	// Retry the upload up to 3 times, in case of "context deadline exceeded" aka Timeout on the http POST
+	sleepBetweenRetry := time.Duration(10) * time.Second
+	err = retry(3, sleepBetweenRetry, func() (err error) {
+		// putio client's default timeout is 30sec. We'll allow a tad more.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*32))
+		defer cancel()
+		// Using Transfer to DL file via magnet file
+		result, err := client.Transfers.Add(ctx, string(magnetData), folderID, "")
+		if err != nil {
+			str := fmt.Sprintf("Transfer to putio err: %v", err)
+			err := errors.New(str)
+			return err
+		}
+
+		fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.CreatedAt)
+		// TODO: should we delete (or move) the file after successful uploading? 
+		//       To prevent accidental reuploads if someone moves files around?
+		return nil
+	})
 	if err != nil {
-		str := fmt.Sprintf("Transfer to putio err: %v", err)
-		err := errors.New(str)
 		return err
 	}
-
-	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.CreatedAt)
-	// TODO: should we delete (or move) the file after successful uploading? To prevent accidental reuplaods if someone moves files around?
 	return nil
+}
+
+// https://stackoverflow.com/questions/67069723/keep-retrying-a-function-in-golang
+func retry(attempts int, sleep time.Duration, f func() error) (err error) {
+    for i := 0; i < attempts; i++ {
+        if i > 0 {
+            log.Println("retrying after error:", err)
+            time.Sleep(sleep)
+            sleep *= 2
+        }
+        err = f()
+        if err == nil {
+            return nil
+        }
+    }
+    return fmt.Errorf("retries failed. After %d attempts, last error: %s", attempts, err)
 }
 
 func checkFileType(filename string) (string, error) {
