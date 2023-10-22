@@ -41,7 +41,7 @@ func folderIDConvert() (int64, error) {
 	return folderID, nil
 }
 
-func uploadTorrentToPutio(filename string, filepath string, client *putio.Client) error {
+func uploadTorrentToPutio(filename string, client *putio.Client) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
 	defer cancel()
 
@@ -72,7 +72,7 @@ func uploadTorrentToPutio(filename string, filepath string, client *putio.Client
 	return nil
 }
 
-func transferMagnetToPutio(filename string, filepath string, client *putio.Client) error {
+func transferMagnetToPutio(filename string, client *putio.Client) error {
 	// Creating a context with 5 second timout in case Transfer is too long
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
 	defer cancel()
@@ -102,6 +102,7 @@ func transferMagnetToPutio(filename string, filepath string, client *putio.Clien
 	}
 
 	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.CreatedAt)
+	// TODO: should we delete (or move) the file after successful uploading? To prevent accidental reuplaods if someone moves files around?
 	return nil
 }
 
@@ -124,7 +125,6 @@ func checkFileType(filename string) (string, error) {
 func prepareFile(event fsnotify.Event, client *putio.Client) {
 	time.Sleep(100 * time.Millisecond) // wait for WRITE event(s) to finish
 
-	var filepath string // todo, maybe remove?
 	var err error
 	var fileType string
 
@@ -140,12 +140,12 @@ func prepareFile(event fsnotify.Event, client *putio.Client) {
 
 	fmt.Printf("Detected new file in watch folder: %v\n", filename)
 	if fileType == "torrent" {
-		err = uploadTorrentToPutio(filename, filepath, client)
+		err = uploadTorrentToPutio(filename, client)
 		if err != nil {
 			log.Println("ERROR: ", err)
 		}
 	} else if fileType == "magnet" {
-		err = transferMagnetToPutio(filename, filepath, client)
+		err = transferMagnetToPutio(filename, client)
 		if err != nil {
 			log.Println("ERROR: ", err)
 		}
@@ -166,9 +166,10 @@ func watchFolder(client *putio.Client) {
 				if !ok {
 					return
 				}
-				log.Println("event:", event) // Flip on for verbose logging
-				if event.Has(fsnotify.Create) {
-					go prepareFile(event, client) // run in separate thread
+				log.Println("event:", event) // verbose logging of fsnotify events…
+				if event.Has(fsnotify.Create) { // However CREATE is the only one we take action on
+					// run in separate thread
+					go prepareFile(event, client) 
 				}
 			case err, ok := <-w.Errors:
 				if !ok {
