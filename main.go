@@ -42,7 +42,7 @@ func folderIDConvert() (int64, error) {
 }
 
 func uploadTorrentToPutio(filename string, client *putio.Client) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*80))
 	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
@@ -52,7 +52,6 @@ func uploadTorrentToPutio(filename string, client *putio.Client) error {
 	}
 
 	// Using open since Upload need an *os.File variable
-	log.Println("Reading...")
 	file, err := os.Open(filename)
 	if err != nil {
 		str := fmt.Sprintf("Openfile err: %v", err)
@@ -61,6 +60,7 @@ func uploadTorrentToPutio(filename string, client *putio.Client) error {
 	}
 
 	// Uploading file to Putio
+	log.Println("Read torrent file. Uploading...")
 	result, err := client.Files.Upload(ctx, file, filename, folderID)
 	if err != nil {
 		str := fmt.Sprintf("Upload to Putio err: %v", err)
@@ -74,7 +74,7 @@ func uploadTorrentToPutio(filename string, client *putio.Client) error {
 
 func transferMagnetToPutio(filename string, client *putio.Client) error {
 	// Creating a context with 5 second timout in case Transfer is too long
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*80))
 	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
