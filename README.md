@@ -104,3 +104,8 @@ What you have to do is:
 ### Example
 ![alt text](https://i.imgur.com/1jUU1xn.png "Example of logs given by Krantor")
 
+## Hacking
+
+* Initial setup: `go mod init gitlab.com/paulirish/krantor`
+* Dependecy mgmt:`go mod tidy`
+* Running: `PUTIO_TOKEN=<token> PUTIO_WATCH_FOLDER=<localpath> PUTIO_DOWNLOAD_FOLDER_ID=<folderid> go run main.go`

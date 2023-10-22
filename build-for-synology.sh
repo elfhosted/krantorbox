@@ -2,6 +2,8 @@
 
 set -eux
 
+# Run to build a binary for Synology
+
 # THANK YOU DUDE. https://www.afox.dev/posts/compiling-go-for-synology-nas
 #
 #     brew install FiloSottile/musl-cross/musl-cross
