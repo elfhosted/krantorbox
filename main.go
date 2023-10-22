@@ -142,12 +142,12 @@ func prepareFile(event fsnotify.Event, client *putio.Client) {
 	if fileType == "torrent" {
 		err = uploadTorrentToPutio(filename, filepath, client)
 		if err != nil {
-			log.Println("err: ", err)
+			log.Println("ERROR: ", err)
 		}
 	} else if fileType == "magnet" {
 		err = transferMagnetToPutio(filename, filepath, client)
 		if err != nil {
-			log.Println("err: ", err)
+			log.Println("ERROR: ", err)
 		}
 	}
 }

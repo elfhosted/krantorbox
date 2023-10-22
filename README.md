@@ -107,5 +107,5 @@ What you have to do is:
 ## Hacking
 
 * Initial setup: `go mod init gitlab.com/paulirish/krantor`
-* Dependecy mgmt:`go mod tidy`
+* Dependency update: for direct deps in go.mod, replace versions with `latest` then run `go mod tidy`.
 * Running: `PUTIO_TOKEN=<token> PUTIO_WATCH_FOLDER=<localpath> PUTIO_DOWNLOAD_FOLDER_ID=<folderid> go run main.go`
