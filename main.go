@@ -42,6 +42,9 @@ func folderIDConvert() (int64, error) {
 }
 
 func uploadTorrentToPutio(filename string, client *putio.Client) error {
+	// putio client's default timeout is 30sec. We'll allow a tad more.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*32))
+	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
 	folderID, err := folderIDConvert()
@@ -57,32 +60,23 @@ func uploadTorrentToPutio(filename string, client *putio.Client) error {
 		return err
 	}
 
-	// Retry the upload up to 3 times, in case of "context deadline exceeded" aka Timeout on the http POST
-	sleepBetweenRetry := time.Duration(10) * time.Second
-	err = retry(3, sleepBetweenRetry, func() (err error) {
-		// putio client's default timeout is 30sec. We'll allow a tad more.
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*32))
-		defer cancel()
-		// Uploading file to Putio
-		log.Println("Read torrent file. Uploading...")
-		result, err := client.Files.Upload(ctx, file, filename, folderID)
-		if err != nil {
-			str := fmt.Sprintf("Upload to Putio err: %v", err)
-			err := errors.New(str)
-			return err
-		}
-
-		fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.Transfer.CreatedAt)
-		return nil
-	})
-
+	// Uploading file to Putio
+	log.Println("Read torrent file. Uploading...")
+	result, err := client.Files.Upload(ctx, file, filename, folderID)
 	if err != nil {
+		str := fmt.Sprintf("Upload to Putio err: %v", err)
+		err := errors.New(str)
 		return err
 	}
+
+	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.Transfer.CreatedAt)
 	return nil
 }
 
 func transferMagnetToPutio(filename string, client *putio.Client) error {
+	// putio client's default timeout is 30sec. We'll allow a tad more.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*32))
+	defer cancel()
 
 	// Convert FolderID from string to int to use with Files.Upload
 	folderID, err := folderIDConvert()
@@ -100,45 +94,37 @@ func transferMagnetToPutio(filename string, client *putio.Client) error {
 	}
 	log.Println("magnetData: ", string(magnetData))
 
-	// Retry the upload up to 3 times, in case of "context deadline exceeded" aka Timeout on the http POST
-	sleepBetweenRetry := time.Duration(10) * time.Second
-	err = retry(3, sleepBetweenRetry, func() (err error) {
-		// putio client's default timeout is 30sec. We'll allow a tad more.
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*32))
-		defer cancel()
-		// Using Transfer to DL file via magnet file
-		result, err := client.Transfers.Add(ctx, string(magnetData), folderID, "")
-		if err != nil {
-			str := fmt.Sprintf("Transfer to putio err: %v", err)
-			err := errors.New(str)
-			return err
-		}
-
-		fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.CreatedAt)
-		// TODO: should we delete (or move) the file after successful uploading? 
-		//       To prevent accidental reuploads if someone moves files around?
-		return nil
-	})
+	// Using Transfer to DL file via magnet file
+	result, err := client.Transfers.Add(ctx, string(magnetData), folderID, "")
 	if err != nil {
+		str := fmt.Sprintf("Transfer to putio err: %v", err)
+		err := errors.New(str)
 		return err
 	}
+
+	fmt.Printf("Transferred to putio:              %v at %v\n-------------------\n", filename, result.CreatedAt)
+	// TODO: should we delete (or move) the file after successful uploading?
+	//       To prevent accidental reuploads if someone moves files around?
 	return nil
 }
 
 // https://stackoverflow.com/questions/67069723/keep-retrying-a-function-in-golang
-func retry(attempts int, sleep time.Duration, f func() error) (err error) {
-    for i := 0; i < attempts; i++ {
-        if i > 0 {
-            log.Println("retrying after error:", err)
-            time.Sleep(sleep)
-            sleep *= 2
-        }
-        err = f()
-        if err == nil {
-            return nil
-        }
-    }
-    return fmt.Errorf("retries failed. After %d attempts, last error: %s", attempts, err)
+func retryIfNeeded(attempts int, sleep time.Duration, f func() error) (err error) {
+	for i := 0; i < attempts; i++ {
+		if i > 0 {
+			log.Println("retrying after error:", err)
+			time.Sleep(sleep)
+			sleep *= 2
+		}
+		err = f()
+		if err == nil {
+			return nil
+		} else if !strings.Contains(err.Error(), "context deadline") {
+			// Don't retry if its not a context deadline error
+			return err
+		}
+	}
+	return fmt.Errorf("retries failed. After %d attempts, last error: %s", attempts, err)
 }
 
 func checkFileType(filename string) (string, error) {
@@ -174,13 +160,20 @@ func prepareFile(event fsnotify.Event, client *putio.Client) {
 	}
 
 	fmt.Printf("Detected new file in watch folder: %v\n", filename)
+	// Retry the upload up to 3 times, in case of "context deadline exceeded" aka Timeout on the http POST
+	sleepBetweenRetry := time.Duration(60) * time.Second
+
 	if fileType == "torrent" {
-		err = uploadTorrentToPutio(filename, client)
+		err = retryIfNeeded(3, sleepBetweenRetry, func() (err error) {
+			return uploadTorrentToPutio(filename, client)
+		})
 		if err != nil {
 			log.Println("ERROR: ", err)
 		}
 	} else if fileType == "magnet" {
-		err = transferMagnetToPutio(filename, client)
+		err = retryIfNeeded(3, sleepBetweenRetry, func() (err error) {
+			return transferMagnetToPutio(filename, client)
+		})
 		if err != nil {
 			log.Println("ERROR: ", err)
 		}
@@ -201,10 +194,10 @@ func watchFolder(client *putio.Client) {
 				if !ok {
 					return
 				}
-				log.Println("event:", event) // verbose logging of fsnotify events…
+				log.Println("event:", event)    // verbose logging of fsnotify events…
 				if event.Has(fsnotify.Create) { // However CREATE is the only one we take action on
 					// run in separate thread
-					go prepareFile(event, client) 
+					go prepareFile(event, client)
 				}
 			case err, ok := <-w.Errors:
 				if !ok {
