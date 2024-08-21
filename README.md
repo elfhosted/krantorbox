@@ -40,7 +40,7 @@ Docker, Go
 
 Build the image with the given Dockerfile:
 
-    docker build --no-cache -t krantorbox .
+    docker build -t krantorbox:local .
 
 ## Configuration
 
