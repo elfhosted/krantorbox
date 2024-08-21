@@ -19,14 +19,14 @@ import (
 var (
 	folderPath        = os.Getenv("TORBOX_WATCH_FOLDER")
 	torboxAPIKey      = os.Getenv("TORBOX_API_KEY")
-	torboxAPIBase     = os.Getenv("TORBOX_API_BASE")
-	torboxAPIVer      = os.Getenv("TORBOX_API_VERSION")
 	deleteAfterUpload bool
 )
 
 const (
-	maxRetries = 3
-	retryDelay = 5 * time.Second
+	maxRetries        = 3
+	retryDelay        = 5 * time.Second
+	torboxAPIBase     = "https://api.torbox.app"
+	torboxAPIVersion  = "v1"
 )
 
 type TorBoxResponse struct {
@@ -210,14 +210,14 @@ func main() {
 	log.Println("Krantorbox Auto-Upload Started")
 	log.Printf("Watching folder: %s", folderPath)
 	log.Printf("TorBox API Base: %s", torboxAPIBase)
-	log.Printf("TorBox API Version: %s", torboxAPIVer)
+	log.Printf("TorBox API Version: %s", torboxAPIVersion)
 	if deleteAfterUpload {
 		log.Println("File deletion after upload is enabled")
 	} else {
 		log.Println("File deletion after upload is disabled")
 	}
 
-	if folderPath == "" || torboxAPIKey == "" || torboxAPIBase == "" || torboxAPIVer == "" {
+	if folderPath == "" || torboxAPIKey == "" {
 		log.Fatal("Please set all required environment variables")
 	}
 
