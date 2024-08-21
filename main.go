@@ -99,7 +99,7 @@ func tryUploadTorrent(file *os.File, filename string) error {
 		return fmt.Errorf("error closing multipart writer: %v", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/api/torrents/createtorrent", torboxAPIBase, torboxAPIVer)
+	url := fmt.Sprintf("%s/%s/api/torrents/createtorrent", torboxAPIBase, torboxAPIVersion)
 	return sendRequest(url, writer.FormDataContentType(), body)
 }
 
@@ -128,7 +128,7 @@ func tryUploadUsenet(file *os.File, filename string) error {
 		return fmt.Errorf("error closing multipart writer: %v", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/api/usenet/createusenetdownload", torboxAPIBase, torboxAPIVer)
+	url := fmt.Sprintf("%s/%s/api/usenet/createusenetdownload", torboxAPIBase, torboxAPIVersion)
 	return sendRequest(url, writer.FormDataContentType(), body)
 }
 
