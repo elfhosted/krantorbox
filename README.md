@@ -29,7 +29,7 @@ Forked from [Paul Irish's Krantor](https://gitlab.com/paulirish/krantor), itself
 * [Advanced Usage](#advanced-usage)
   * [Docker](#docker)
   * [Docker-compose](#docker-compose)
-* [How to use with Sonarr/Radarr](#how-to-use-with-sonarr/radarr)
+* [How to use with Sonarr / Radarr](#how-to-use-with-sonarr/radarr)
 * [Example](#example)
 
 ## Requirements
@@ -56,7 +56,7 @@ TORBOX_WATCH_FOLDER        [Folder to watch for new files]
 DELETE_AFTER_UPLOAD        [Delete original .torrent, .magnet, .usenet file after upload]
 ```
 
-### Use within Sonarr / Radarr
+### Use with Sonarr / Radarr
 
  * In Radarr / Sonarr go to `Settings` -> `Download Clients` - *you need to do this for both Radarr and Sonarr separately*
 
