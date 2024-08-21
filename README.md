@@ -1,18 +1,29 @@
 
-# Krantor
+# KranTorbox
 
-Watches on local directory for new .torrent or .magnet files. When any are added, it uploads to a single put.io folder.
+Watches a local directory for new .torrent, .magnet, .usenet files and uploads them to TorBox.
+
+This serverse as a focussed, lightweight alternative to [West's Blackhole Script](https://github.com/westsurname/scripts).
+
+Forked from [Paul Irish's Krantor](https://gitlab.com/paulirish/krantor), itself a fork of [Krantor by klippz](https://gitlab.com/klippz/krantor) - look to those for put.io support.
+
+## Differences from Krantor
 
 
-## Changelog
+**TorBox** ✅ 
 
-* 2023 Oct (paulirish): Add retries to fix 'context deadline exceeded' timeout on uploads. Update deps
-* 2023 July ([agunal](https://github.com/agunal/krantor)) Fix dockerfile, add threading, timeout
-* 2023 May ([paulirish](https://gitlab.com/paulirish/krantor)): Switch to inotify, using less CPU/energy (from polling every 100ms to waiting on events). Handle multiple files being added at once.
-* 2020 Sept ([klippz](https://gitlab.com/klippz/krantor)): Original commits
+**put.io** ❌
+
+
+
+**Added**: Usenet | Option to delete .torrent, .magnet, .usenet files after upload.
+
+
+**Removed**: Synology build script (I'm unable to test).
 
 ## Table of Contents
 
+* [Requirements](#requirements)
 * [Installation](#installation)
 * [Configuration](#configuration)
 * [Advanced Usage](#advanced-usage)
@@ -21,55 +32,41 @@ Watches on local directory for new .torrent or .magnet files. When any are added
 * [How to use with Sonarr/Radarr](#how-to-use-with-sonarr/radarr)
 * [Example](#example)
 
+## Requirements
+
+Docker, Go
+
 ## Installation
 
-Just build the image with the given Dockerfile:
+Build the image with the given Dockerfile:
 
-    docker build --no-cache -t krantor .
-
-Or build the binary for your target platform.
+    docker build --no-cache -t krantorbox .
 
 ## Configuration
 
-To make it run, you need to set 3 ENV variables:
+2 ENV variables are required - **copy your API Key from [torbox.app/settings](https://torbox.app/settings)**:
 ```
-PUTIO_TOKEN               [Putio Token to communication with their APIs]
-PUTIO_WATCH_FOLDER        [Folder to watch for new files]
-PUTIO_DOWNLOAD_FOLDER_ID  [Go into your put.io folder in your browser and copy the number in the URL:
-https://app.put.io/files/<folder-id> ]
+TORBOX_API_KEY             [Key for TorBox's API]
+TORBOX_WATCH_FOLDER        [Folder to watch for new files]
 ```
 
-For oauth token (API Key): https://help.put.io/en/articles/5972538-how-to-get-an-oauth-token-from-put-io
 
-If you need to watch multiple folders (TV, Movies, etc), you'll have to run multiple times.
+1 ENV is optional (and defaults to `false`):
+```
+DELETE_AFTER_UPLOAD        [Delete original .torrent, .magnet, .usenet file after upload]
+```
 
+### Use within Sonarr / Radarr
 
-### How to use with Sonarr/Radarr
-What you have to do is:
- * Go to your Radarr/Sonarr configuration
- * `Download Client` tab
- * Add a new `torrent blackhole` client
- * Chose a name
- * In torrent & watch folder, put the same folder you set as `PUTIO_WATCH_FOLDER`
-   * If for `PUTIO_WATCH_FOLDER` you set `/torrent`, you should put the same in torrent & watch folder
- * Save magnet file !!
- * Done !
+ * In Radarr / Sonarr go to `Settings` -> `Download Clients` - *you need to do this for both Radarr and Sonarr separately*
 
 
-### Integration 
+ * Add `Torrent Blackhole` or `Usenet Blackhole` - *setting up both will work, so repeat the steps if you want to watch for torrents, magnets **and** usenet files*
 
-[From reddit thread](https://www.reddit.com/r/putdotio/comments/136u8r2/comment/jisszuf/)...
+ * Chose a suitable name e.g. `Torrent Blackhole`
 
->Use Krantor https://gitlab.com/klippz/krantor This gets torrents from sonarr into put.io Set up as a Download Client > Torrent blackhole. Follow readme instructions, however I do separate local folders for Torrent and Watch. My putio download folder is named `/dropzone/TV``. (I also follow the TRaSH guide for hardlinks)
->
->You need something to automatically download from put.io into your local "downloads" folder. (Probably.) I use `rclone`. Set up rclone and add a putio remote. Test it with rclone ls and stuff. Here's the rclone command that'll move (copy and delete) files from putio to your machine: `rclone -v --config="pathto/rclone.conf" --log-file="pathto/rclone.log" move putio:dropzone/TV /data/Downloads/TV/ --delete-empty-src-dirs` I run this every 30 minutes. You probably want to ensure a second invocation doesn't overlap, so.. handle that with your task scheduler mechanism or manually with `flock``.
->
->I personally never understood how people use Sonarr when all indexers are paid/private except for rarbg (RIP). I found a solution with **Jackett**. In there, I added EZTV, 1337, TPB.. and then hooked Sonarr up to those. Finally both search and rss both work effectively.
->
->If using radarr, repeat all the above with it for movies. I personally get a lot of value from Sonarr, but for movies the chill.institute + download (manually, ftp, rclone, etc) seems fine and radarr seems kinda overkill. But to each their own. :)
+ * Set `Torrent/Usenet Folder` to your chosen directory e.g. `/blackhole` - *must be the same as your `TORBOX_WATCH_FOLDER`*
 
-### Example
-![alt text](https://i.imgur.com/1jUU1xn.png "Example of logs given by Krantor")
 
 ## Advanced Usage
 
@@ -77,35 +74,28 @@ What you have to do is:
 
 ```
 docker create \
-  --name=krantor \
-  -e PUTIO_TOKEN=xxx \
-  -e PUTIO_WATCH_FOLDER=/torrents \
-  -e PUTIO_DOWNLOAD_FOLDER_ID=0 \
-  -v /path/to/torrent:/torrents \
+  --name=krantorbox \
+  -e TORBOX_API_KEY=xxx \
+  -e TORBOX_WATCH_FOLDER=/blackhole \
+  -e DELETE_AFTER_UPLOAD=true \
+  -v ./blackhole:/blackhole \
   --restart unless-stopped \
-  krantor
+  krantorbox
 ```
 
 ### Docker-compose
 
 ```
----
-version: "3.7"
 services:
-  putio:
-    image: krantor
-    container_name: krantor
+
+  krantorbox:
+    container_name: krantorbox
+    image: krantorbox:local
     environment:
-      - PUTIO_TOKEN=xxx
-      - PUTIO_WATCH_FOLDER=/torrents
-      - PUTIO_DOWNLOAD_FOLDER_ID=0
+      - TORBOX_API_KEY=xxx
+      - TORBOX_WATCH_FOLDER=/blackhole
+      - DELETE_AFTER_UPLOAD=true
     volumes:
-      - /path/to/torrent:/torrents
+      - ./blackhole:/blackhole
     restart: unless-stopped
 ```
-
-## Hacking
-
-* Initial setup: `go mod init gitlab.com/paulirish/krantor`
-* Dependency update: for direct deps in go.mod, replace versions with `latest` then run `go mod tidy`.
-* Running: `PUTIO_TOKEN=<token> PUTIO_WATCH_FOLDER=<localpath> PUTIO_DOWNLOAD_FOLDER_ID=<folderid> go run main.go`

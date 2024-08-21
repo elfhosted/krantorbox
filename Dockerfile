@@ -1,14 +1,18 @@
-FROM    golang:1.17-alpine
+FROM golang:1.22-alpine
 
-ADD             . /app
 WORKDIR /app
-RUN             echo "export export GO111MODULE=auto" >> /root/.bashrc
-RUN             go mod init github.com/agunal/krantor
-RUN             apk add git \
-                && go get github.com/putdotio/go-putio@latest \
-                && go get github.com/fsnotify/fsnotify@latest \
-                && go get golang.org/x/oauth2@latest \
-                && go mod tidy
 
-RUN             go build -o krantor
-CMD             ["/app/krantor"]
+# Copy go.mod and go.sum files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the application's source code
+COPY . .
+
+# Build the application
+RUN go build -o krantorbox
+
+# Run the application
+CMD ["/app/krantorbox"]
